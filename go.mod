@@ -1,4 +1,4 @@
-module pee
+module github.com/xrehpicx/pee
 
 go 1.19
 
