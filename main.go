@@ -3,8 +3,9 @@ package main
 import (
 	"fmt"
 	"os"
-	projectconfig "pee/config"
-	projectmanager "pee/project-manager"
+
+	projectconfig "github.com/xrehpicx/pee/config"
+	projectmanager "github.com/xrehpicx/pee/project-manager"
 )
 
 func init() {

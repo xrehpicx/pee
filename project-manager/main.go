@@ -3,10 +3,11 @@ package projectmanager
 import (
 	"fmt"
 	"os"
-	projectconfig "pee/config"
-	"pee/controller"
-	"pee/ui/filepicker"
-	"pee/ui/table"
+
+	projectconfig "github.com/xrehpicx/pee/config"
+	"github.com/xrehpicx/pee/controller"
+	"github.com/xrehpicx/pee/ui/filepicker"
+	"github.com/xrehpicx/pee/ui/table"
 
 	btable "github.com/charmbracelet/bubbles/table"
 	"github.com/charmbracelet/log"

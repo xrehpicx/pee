@@ -3,8 +3,9 @@ package controller
 import (
 	"fmt"
 	"os/exec"
-	projectconfig "pee/config"
 	"strings"
+
+	projectconfig "github.com/xrehpicx/pee/config"
 
 	"github.com/charmbracelet/log"
 )
