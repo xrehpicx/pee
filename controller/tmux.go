@@ -217,3 +217,12 @@ func createWindow(config *projectconfig.Configuration, sessionName string, index
 
 	return nil
 }
+
+func KillTmuxSession(sessionName string) error {
+	killSessionCmd := exec.Command("tmux", "kill-session", "-t", sessionName)
+	if err := killSessionCmd.Run(); err != nil {
+		return err
+	}
+	log.Debug("Ran command", "command", killSessionCmd.String())
+	return nil
+}

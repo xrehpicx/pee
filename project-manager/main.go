@@ -16,6 +16,24 @@ var RootCmd = &cobra.Command{
 	},
 }
 
+var KillTmuxSessionCmd = &cobra.Command{
+	Use:  "kill",
+	Args: cobra.ExactArgs(1),
+	Run: func(cmd *cobra.Command, args []string) {
+		sessionName := args[0]
+		err := controller.KillTmuxSession(sessionName)
+		if err != nil {
+			log.Error(err)
+			return
+		}
+		log.Debug("Killed tmux session", "name", sessionName)
+	},
+}
+
+func init() {
+	RootCmd.AddCommand(KillTmuxSessionCmd)
+}
+
 func ExecuteProjectEnv(projectName string) {
 	config, err := projectconfig.GetProjectConfig(projectName)
 	if err != nil {
