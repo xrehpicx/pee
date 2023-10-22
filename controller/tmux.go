@@ -76,6 +76,13 @@ func CreateTmuxSession(config *projectconfig.Configuration) error {
 			}
 			log.Debug("Ran command", "command", selectPaneCmd.String())
 
+			// Change the working directory
+			changeDirCmd := exec.Command("tmux", "send-keys", "-t", paneName, "cd "+config.WorkingDir, "Enter")
+			if err := changeDirCmd.Run(); err != nil {
+				return err
+			}
+			log.Debug("Ran command", "command", changeDirCmd.String())
+
 			// Send commands to the pane
 			sendCommandsCmd := exec.Command("tmux", "send-keys", "-t", paneName, strings.Join(pane.ShellCommand, " && "), "Enter")
 			if err := sendCommandsCmd.Run(); err != nil {
@@ -183,6 +190,13 @@ func createWindow(config *projectconfig.Configuration, sessionName string, index
 			return err
 		}
 		log.Debug("Ran command", "command", selectPaneCmd.String())
+
+		// Change the working directory for the pane
+		changeDirCmd := exec.Command("tmux", "send-keys", "-t", paneName, "cd "+config.WorkingDir, "Enter")
+		if err := changeDirCmd.Run(); err != nil {
+			return err
+		}
+		log.Debug("Ran command", "command", changeDirCmd.String())
 
 		// Send commands to the pane
 		sendCommandsCmd := exec.Command("tmux", "send-keys", "-t", paneName, strings.Join(pane.ShellCommand, " && "), "Enter")
