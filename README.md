@@ -74,6 +74,7 @@ and select the project from table and click `<enter>` to open/create the session
    As of now this supports only tmux windows and panes, would want to add support for iterm and other terminals if they have api's to do so.
 2. Ability to save an opened session into a config or update a config
 3. Ability to save custom layouts as named layouts that can be used across multiple projects
+4. Sync configs across devices
 
 ---
 All contributions are welcome 
