@@ -3,7 +3,7 @@
 Project Environment Executor, Define your project workspace as code and config.
 
 ## Usecase
-Creating a tmux session from a config file, this includes setting up working directories, setting up dev servers, and opening editors.
+Creating tmux sessions with preconfigured panes layouts and commands. inspired from [tmuxinator](https://github.com/tmuxinator/tmuxinator)
 
 ### Get Started
 
