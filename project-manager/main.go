@@ -46,7 +46,7 @@ var ListProjects = &cobra.Command{
 			// print a vim command to open the config file
 			editorCommand, err := projectconfig.GetEditorCommand(selectedRow[0])
 			if err != nil {
-				editorCommand = "vim"
+				editorCommand = ""
 			}
 			utils.EditFile(projectconfig.ProjectConfigFilePath(selectedRow[0]), editorCommand)
 			log.Debug("Opened config file", "file", projectconfig.ProjectConfigFilePath(selectedRow[0]))
@@ -150,7 +150,12 @@ var InitCmd = &cobra.Command{
 		if err != nil {
 			logger.Error(err)
 		} else {
-			fmt.Println("Created Project, set up your config by editing:", ppath)
+			editorCommand, err := projectconfig.GetEditorCommand(projectName)
+			if err != nil {
+				editorCommand = ""
+			}
+			utils.EditFile(ppath, editorCommand)
+			fmt.Println("Created Project, config is at:", ppath)
 		}
 	},
 }

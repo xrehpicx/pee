@@ -5,9 +5,19 @@ import (
 	"os/exec"
 )
 
+func checkNvimExists() bool {
+	cmd := exec.Command("nvim", "--version")
+	err := cmd.Run()
+	return err == nil
+}
+
 func EditFile(filePath string, editorCommand string) error {
 	if editorCommand == "" {
-		editorCommand = "vim"
+		if checkNvimExists() {
+			editorCommand = "nvim"
+		} else {
+			editorCommand = "vim"
+		}
 	}
 
 	cmd := exec.Command(editorCommand, filePath)
