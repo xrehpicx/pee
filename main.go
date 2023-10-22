@@ -12,6 +12,7 @@ func init() {
 	projectconfig.Init()
 	projectmanager.RootCmd.AddCommand(projectmanager.ListProjects)
 	projectmanager.RootCmd.AddCommand(projectmanager.InitCmd)
+	projectmanager.RootCmd.AddCommand(projectmanager.ScreenCmd)
 }
 
 func main() {
