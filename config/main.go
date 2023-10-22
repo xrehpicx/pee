@@ -30,6 +30,7 @@ type Configuration struct {
 	LastOpened    time.Time
 	Attach        bool   `yaml:"attach"`
 	StartupWindow string `yaml:"startup_window"`
+	StartupPane   int    `yaml:"startup_pane"`
 }
 
 var configDir string

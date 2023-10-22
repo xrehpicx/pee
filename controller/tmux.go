@@ -109,6 +109,16 @@ func CreateTmuxSession(config *projectconfig.Configuration) error {
 		}
 		log.Debug("Ran command", "command", selectWindowCmd.String())
 
+		// Select initial pane
+		if config.StartupPane > 0 {
+			defaultPane := fmt.Sprintf("%s:%d.%d", sessionName, config.StartupPane, 1)
+			selectPaneCmd := exec.Command("tmux", "select-pane", "-t", defaultPane)
+			if err := selectPaneCmd.Run(); err != nil {
+				return err
+			}
+			log.Debug("Ran command", "command", selectPaneCmd.String())
+		}
+
 		if config.Attach {
 			switchSessionCmd := exec.Command("tmux", "switch-client", "-t", sessionName)
 			if err := switchSessionCmd.Run(); err != nil {
