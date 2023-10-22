@@ -98,7 +98,12 @@ func CreateTmuxSession(config *projectconfig.Configuration) error {
 		}
 
 		// Select the initial window and switch to the session
-		selectWindowCmd := exec.Command("tmux", "select-window", "-t", sessionName+":1")
+		defaultWindow := sessionName + ":1"
+		if config.StartupWindow != "" {
+			defaultWindow = config.StartupWindow
+		}
+
+		selectWindowCmd := exec.Command("tmux", "select-window", "-t", defaultWindow)
 		if err := selectWindowCmd.Run(); err != nil {
 			return err
 		}

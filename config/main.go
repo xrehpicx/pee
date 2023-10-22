@@ -23,20 +23,13 @@ type Window struct {
 }
 
 type Configuration struct {
-	SessionName         string   `yaml:"name"`
-	EditorCommand       string   `yaml:"editor"`
-	WorkingDir          string   `yaml:"root"`
-	Windows             []Window `yaml:"windows"`
-	LastOpened          time.Time
-	Attach              bool   `yaml:"attach"`
-	StartupWindow       string `yaml:"startup_window"`
-	StartupPane         int    `yaml:"startup_pane"`
-	OnProjectStart      string `yaml:"on_project_start"`
-	OnProjectFirstStart string `yaml:"on_project_first_start"`
-	OnProjectRestart    string `yaml:"on_project_restart"`
-	OnProjectExit       string `yaml:"on_project_exit"`
-	OnProjectStop       string `yaml:"on_project_stop"`
-	SocketName          string `yaml:"socket_name"`
+	SessionName   string   `yaml:"name"`
+	EditorCommand string   `yaml:"editor"`
+	WorkingDir    string   `yaml:"root"`
+	Windows       []Window `yaml:"windows"`
+	LastOpened    time.Time
+	Attach        bool   `yaml:"attach"`
+	StartupWindow string `yaml:"startup_window"`
 }
 
 var configDir string
