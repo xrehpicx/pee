@@ -8,6 +8,7 @@ import (
 	"github.com/xrehpicx/pee/controller"
 	"github.com/xrehpicx/pee/ui/filepicker"
 	"github.com/xrehpicx/pee/ui/table"
+	"github.com/xrehpicx/pee/utils"
 
 	btable "github.com/charmbracelet/bubbles/table"
 	"github.com/charmbracelet/log"
@@ -43,7 +44,12 @@ var ListProjects = &cobra.Command{
 		selectedRow, action := table.Table(columns, rows)
 		if action == "edit" {
 			// print a vim command to open the config file
-			fmt.Println("vim", projectconfig.ProjectConfigFilePath(selectedRow[0]))
+			editorCommand, err := projectconfig.GetEditorCommand(selectedRow[0])
+			if err != nil {
+				editorCommand = "vim"
+			}
+			utils.EditFile(projectconfig.ProjectConfigFilePath(selectedRow[0]), editorCommand)
+			log.Debug("Opened config file", "file", projectconfig.ProjectConfigFilePath(selectedRow[0]))
 		}
 		if action == "open" {
 			ExecuteProjectEnv(selectedRow[0])
@@ -71,7 +77,7 @@ func ExecuteProjectEnv(projectName string) {
 		return
 	}
 	projectconfig.UpdateLastOpened(projectName)
-	log.Info("Created tmux session", "name", config.SessionName)
+	log.Debug("Created tmux session", "name", config.SessionName)
 }
 
 var InitCmd = &cobra.Command{
@@ -94,36 +100,57 @@ var InitCmd = &cobra.Command{
 			log.Error(err)
 			return
 		}
-		log.Info("Selected", "work_dir", selected)
+		log.Debug("Selected", "work_dir", selected)
 
-		sessionName := projectName
-		tabs := []struct {
-			Name     string
-			Commands []string
-		}{
+		// Define the session configuration
+		workingDir := selected
+		windows := []projectconfig.Window{
 			{
-				Name:     "editor",
-				Commands: []string{"echo 'command to open ur editor'"},
+				WindowName: "editor",
+				Layout:     "8070,202x58,0,0[202x46,0,0,89,202x11,0,47,92]",
+				Panes: []projectconfig.Pane{
+					{
+						ShellCommand: []string{"echo 'command to open your editor'"},
+					},
+					{
+						ShellCommand: []string{"echo 'run dev server'"},
+					},
+				},
 			},
 			{
-				Name:     "dev server",
-				Commands: []string{"echo 'command to start dev server'", "echo 'command to just initialize ur dependencies'"},
+				WindowName: "ssh windows",
+				ShellCommandBefore: []string{
+					"ls -lr",
+				},
+				Panes: []projectconfig.Pane{
+					{
+						ShellCommand: []string{"echo 'command to open your ssh windows'"},
+					},
+					{
+						ShellCommand: []string{"echo 'command to open your ssh windows'"},
+					},
+				},
 			},
 			{
-				Name:     "git",
-				Commands: []string{"echo 'command to open ur git client (use lazygit its amazing)'"},
+				WindowName: "git",
+				Panes: []projectconfig.Pane{
+					{
+						ShellCommand: []string{"echo 'command to open your git client'"},
+					},
+				},
 			},
 		}
+
 		logger := log.NewWithOptions(os.Stderr, log.Options{
 			ReportCaller:    false,
 			ReportTimestamp: false,
 		})
-		ppath, err := projectconfig.CreateProject(projectName, sessionName, selected, tabs)
+
+		ppath, err := projectconfig.CreateProject(projectName, workingDir, windows)
 		if err != nil {
 			logger.Error(err)
 		} else {
-			// logger.Info("Created Project", "path", ppath)
-			fmt.Println("Created Project", "setup your config by editing: ", ppath)
+			fmt.Println("Created Project, set up your config by editing:", ppath)
 		}
 	},
 }

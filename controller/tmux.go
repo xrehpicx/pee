@@ -10,65 +10,91 @@ import (
 	"github.com/charmbracelet/log"
 )
 
-// CreateTmuxSession creates a tmux session based on the given Configuration.
+// CreateTmuxSession creates a Tmux session based on the given Configuration.
 func CreateTmuxSession(config *projectconfig.Configuration) error {
 	sessionName := config.SessionName
 
 	// Check if the session exists
 	checkSessionCmd := exec.Command("tmux", "has-session", "-t", sessionName)
+	log.Debug("Ran command", "command", checkSessionCmd.String())
 	if err := checkSessionCmd.Run(); err == nil {
 		// If it exists, switch to the session
 		switchSessionCmd := exec.Command("tmux", "switch-client", "-t", sessionName)
 		if err := switchSessionCmd.Run(); err != nil {
 			return err
 		}
+		log.Debug("Ran command", "command", switchSessionCmd.String())
 	} else {
 		// If it doesn't exist, create the session
 		createSessionCmd := exec.Command("tmux", "new-session", "-d", "-s", sessionName)
 		if err := createSessionCmd.Run(); err != nil {
 			return err
 		}
-		log.Info("Ran command", "command", createSessionCmd.String())
+		log.Debug("Ran command", "command", createSessionCmd.String())
 
 		// Change the working directory
 		changeDirCmd := exec.Command("tmux", "send-keys", "-t", sessionName, "cd "+config.WorkingDir, "Enter")
 		if err := changeDirCmd.Run(); err != nil {
 			return err
 		}
-		log.Info("Ran command", "command", changeDirCmd.String())
+		log.Debug("Ran command", "command", changeDirCmd.String())
 
-		// Send commands to the session for the first tab
-		sendCommandsCmd := exec.Command("tmux", "send-keys", "-t", sessionName, strings.Join(config.Tabs[0].Commands, " && "), "Enter")
+		// Create the first window outside the loop
+		// createWindow(config, sessionName, 0)
+
+		window := config.Windows[0]
+		windowName := fmt.Sprintf("%s:%d", sessionName, 1)
+
+		sendCommandsCmd := exec.Command("tmux", "send-keys", "-t", windowName, strings.Join(window.Panes[0].ShellCommand, " && "), "Enter")
 		if err := sendCommandsCmd.Run(); err != nil {
 			return err
 		}
-		log.Info("Ran command", "command", sendCommandsCmd.String())
-		// Rename the tab to the specified name
-		renameTabCmd := exec.Command("tmux", "rename-window", "-t", sessionName+":1", config.Tabs[0].Name)
-		if err := renameTabCmd.Run(); err != nil {
+		log.Debug("Ran command", "command", sendCommandsCmd.String())
+
+		// Rename the window to the specified name
+		renameWindowCmd := exec.Command("tmux", "rename-window", "-t", windowName, window.WindowName)
+		if err := renameWindowCmd.Run(); err != nil {
 			return err
 		}
+		log.Debug("Ran command", "command", renameWindowCmd.String())
 
-		// Create and run commands for additional tabs
-		for i, tab := range config.Tabs[1:] {
-			windowName := fmt.Sprintf("%s:%d", sessionName, i+2)
-			createWindowCmd := exec.Command("tmux", "new-window", "-t", windowName, "-n", tab.Name)
-			if err := createWindowCmd.Run(); err != nil {
+		// Create and run commands for additional panes in the window
+		for j, pane := range window.Panes[1:] {
+			paneName := fmt.Sprintf("%s:%d.%d", sessionName, 1, j+2)
+
+			// Split the window horizontally
+			splitPaneCmd := exec.Command("tmux", "split-window", "-t", windowName, "-h", "-p", "50")
+			if err := splitPaneCmd.Run(); err != nil {
 				return err
 			}
-			log.Info("Ran command", "command", createWindowCmd.String())
+			log.Debug("Ran command", "command", splitPaneCmd.String())
 
-			changeDirCmd = exec.Command("tmux", "send-keys", "-t", windowName, "cd "+config.WorkingDir, "Enter")
-			if err := changeDirCmd.Run(); err != nil {
+			// Select the new pane
+			selectPaneCmd := exec.Command("tmux", "select-pane", "-t", paneName)
+			if err := selectPaneCmd.Run(); err != nil {
 				return err
 			}
-			log.Info("Ran command", "command", changeDirCmd.String())
+			log.Debug("Ran command", "command", selectPaneCmd.String())
 
-			sendCommandsCmd = exec.Command("tmux", "send-keys", "-t", windowName, strings.Join(tab.Commands, " && "), "Enter")
+			// Send commands to the pane
+			sendCommandsCmd := exec.Command("tmux", "send-keys", "-t", paneName, strings.Join(pane.ShellCommand, " && "), "Enter")
 			if err := sendCommandsCmd.Run(); err != nil {
 				return err
 			}
-			log.Info("Ran command", "command", sendCommandsCmd.String())
+			log.Debug("Ran command", "command", sendCommandsCmd.String())
+		}
+
+		if window.Layout != "" {
+			layoutCmd := exec.Command("tmux", "select-layout", "-t", windowName, window.Layout)
+			if err := layoutCmd.Run(); err != nil {
+				return err
+			}
+			log.Debug("Ran command", "command", layoutCmd.String())
+		}
+
+		// Create and run commands for each window inside the loop
+		for i := 1; i < len(config.Windows); i++ {
+			createWindow(config, sessionName, i)
 		}
 
 		// Select the initial window and switch to the session
@@ -76,11 +102,88 @@ func CreateTmuxSession(config *projectconfig.Configuration) error {
 		if err := selectWindowCmd.Run(); err != nil {
 			return err
 		}
+		log.Debug("Ran command", "command", selectWindowCmd.String())
 
-		switchSessionCmd := exec.Command("tmux", "switch-client", "-t", sessionName)
-		if err := switchSessionCmd.Run(); err != nil {
+		if config.Attach {
+			switchSessionCmd := exec.Command("tmux", "switch-client", "-t", sessionName)
+			if err := switchSessionCmd.Run(); err != nil {
+				return err
+			}
+			log.Debug("Ran command", "command", switchSessionCmd.String())
+		}
+	}
+
+	return nil
+}
+
+func createWindow(config *projectconfig.Configuration, sessionName string, index int) error {
+	if index >= len(config.Windows) {
+		return nil
+	}
+	window := config.Windows[index]
+	windowName := fmt.Sprintf("%s:%d", sessionName, index+1)
+
+	// Create a new window
+	createWindowCmd := exec.Command("tmux", "new-window", "-t", sessionName, "-n", windowName)
+	if err := createWindowCmd.Run(); err != nil {
+		return err
+	}
+	log.Debug("Ran command", "command", createWindowCmd.String())
+
+	// Change the working directory for the window
+	changeDirCmd := exec.Command("tmux", "send-keys", "-t", windowName, "cd "+config.WorkingDir, "Enter")
+	if err := changeDirCmd.Run(); err != nil {
+		return err
+	}
+	log.Debug("Ran command", "command", changeDirCmd.String())
+
+	// Send commands to the window
+	sendCommandsCmd := exec.Command("tmux", "send-keys", "-t", windowName, strings.Join(window.Panes[0].ShellCommand, " && "), "Enter")
+	if err := sendCommandsCmd.Run(); err != nil {
+		return err
+	}
+	log.Debug("Ran command", "command", sendCommandsCmd.String())
+
+	// Rename the window to the specified name
+	renameWindowCmd := exec.Command("tmux", "rename-window", "-t", windowName, window.WindowName)
+	if err := renameWindowCmd.Run(); err != nil {
+		return err
+	}
+	log.Debug("Ran command", "command", renameWindowCmd.String())
+
+	// Create and run commands for additional panes in the window
+	for j, pane := range window.Panes[1:] {
+		paneName := fmt.Sprintf("%s:%d.%d", sessionName, index+1, j+2)
+
+		// Split the window horizontally
+		splitPaneCmd := exec.Command("tmux", "split-window", "-t", windowName, "-h", "-p", "50")
+		if err := splitPaneCmd.Run(); err != nil {
 			return err
 		}
+		log.Debug("Ran command", "command", splitPaneCmd.String())
+
+		// Select the new pane
+		selectPaneCmd := exec.Command("tmux", "select-pane", "-t", paneName)
+		if err := selectPaneCmd.Run(); err != nil {
+			return err
+		}
+		log.Debug("Ran command", "command", selectPaneCmd.String())
+
+		// Send commands to the pane
+		sendCommandsCmd := exec.Command("tmux", "send-keys", "-t", paneName, strings.Join(pane.ShellCommand, " && "), "Enter")
+		if err := sendCommandsCmd.Run(); err != nil {
+			return err
+		}
+		log.Debug("Ran command", "command", sendCommandsCmd.String())
+	}
+
+	if window.Layout != "" {
+
+		layoutCmd := exec.Command("tmux", "select-layout", "-t", windowName, window.Layout)
+		if err := layoutCmd.Run(); err != nil {
+			return err
+		}
+		log.Debug("Ran command", "command", layoutCmd.String())
 	}
 
 	return nil

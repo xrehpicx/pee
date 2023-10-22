@@ -11,15 +11,32 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
+type Pane struct {
+	ShellCommand []string `yaml:"shell_command"`
+}
+
+type Window struct {
+	WindowName         string   `yaml:"window_name"`
+	Layout             string   `yaml:"layout"`
+	ShellCommandBefore []string `yaml:"shell_command_before"`
+	Panes              []Pane   `yaml:"panes"`
+}
+
 type Configuration struct {
-	Name        string `yaml:"name"`
-	SessionName string `yaml:"session_name"`
-	WorkingDir  string `yaml:"working_dir"` // New field for working directory
-	Tabs        []struct {
-		Name     string   `yaml:"name"`
-		Commands []string `yaml:"commands"`
-	} `yaml:"tabs"`
-	LastOpened time.Time `yaml:"last_opened"`
+	SessionName         string   `yaml:"name"`
+	EditorCommand       string   `yaml:"editor"`
+	WorkingDir          string   `yaml:"root"`
+	Windows             []Window `yaml:"windows"`
+	LastOpened          time.Time
+	Attach              bool   `yaml:"attach"`
+	StartupWindow       string `yaml:"startup_window"`
+	StartupPane         int    `yaml:"startup_pane"`
+	OnProjectStart      string `yaml:"on_project_start"`
+	OnProjectFirstStart string `yaml:"on_project_first_start"`
+	OnProjectRestart    string `yaml:"on_project_restart"`
+	OnProjectExit       string `yaml:"on_project_exit"`
+	OnProjectStop       string `yaml:"on_project_stop"`
+	SocketName          string `yaml:"socket_name"`
 }
 
 var configDir string
@@ -99,6 +116,17 @@ func UpdateLastOpened(projectName string) error {
 	return nil
 }
 
+func GetEditorCommand(projectName string) (string, error) {
+	configFile := ProjectConfigFilePath(projectName)
+
+	config, err := Load(configFile)
+	if err != nil {
+		return "", err
+	}
+
+	return config.EditorCommand, nil
+}
+
 func ListProjects() (map[string]*Configuration, error) {
 	projectConfigs := make(map[string]*Configuration)
 
@@ -155,39 +183,18 @@ func ProjectExists(projectName string) bool {
 	return true
 }
 
-func CreateProject(projectName, sessionName, workingDir string, tabs []struct {
-	Name     string
-	Commands []string
-},
-) (string, error) {
-	configFile := ProjectConfigFilePath(projectName)
+func CreateProject(sessionName, workingDir string, windows []Window) (string, error) {
+	configFile := ProjectConfigFilePath(sessionName)
 
 	if _, err := os.Stat(configFile); err == nil {
-		return "", fmt.Errorf("Project with the name '%s' already exists", projectName)
-	}
-
-	var tabsWithYAMLTags []struct {
-		Name     string   `yaml:"name"`
-		Commands []string `yaml:"commands"`
-	}
-
-	for _, tab := range tabs {
-		tabWithYAMLTags := struct {
-			Name     string   `yaml:"name"`
-			Commands []string `yaml:"commands"`
-		}{
-			Name:     tab.Name,
-			Commands: tab.Commands,
-		}
-		tabsWithYAMLTags = append(tabsWithYAMLTags, tabWithYAMLTags)
+		return "", fmt.Errorf("Project with the name '%s' already exists", sessionName)
 	}
 
 	newConfig := &Configuration{
-		Name:        projectName,
 		SessionName: sessionName,
 		WorkingDir:  workingDir,
-		Tabs:        tabsWithYAMLTags,
-		LastOpened:  time.Now(),
+		Windows:     windows,
+		Attach:      true,
 	}
 
 	err := WriteConfigToFile(configFile, newConfig)
@@ -204,23 +211,10 @@ func WriteConfigToFile(filename string, config *Configuration) error {
 		return err
 	}
 
-	indentedYAML := indentYAML(string(data), "") // Convert data to string
-
-	err = os.WriteFile(filename, []byte(indentedYAML), 0644)
+	err = os.WriteFile(filename, data, 0644)
 	if err != nil {
 		return err
 	}
 
 	return nil
-}
-
-func indentYAML(yamlString, prefix string) string {
-	lines := strings.Split(yamlString, "\n")
-	indentedLines := make([]string, len(lines))
-
-	for i, line := range lines {
-		indentedLines[i] = prefix + line
-	}
-
-	return strings.Join(indentedLines, "\n")
 }
