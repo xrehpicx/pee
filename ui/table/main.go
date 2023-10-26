@@ -92,15 +92,19 @@ func Table(columns []table.Column, rows []table.Row) (table.Row, string) {
 	)
 
 	s := table.DefaultStyles()
+
+	// rounded borders
 	s.Header = s.Header.
 		BorderStyle(lipgloss.NormalBorder()).
 		BorderForeground(lipgloss.Color("240")).
 		BorderBottom(true).
 		Bold(false)
+
 	s.Selected = s.Selected.
 		Foreground(lipgloss.Color("229")).
-		Background(lipgloss.Color("57")).
+		Background(lipgloss.Color("240")).
 		Bold(false)
+
 	t.SetStyles(s)
 
 	m := model{t, "", help.New(), keys}
