@@ -11,7 +11,7 @@ Creating tmux sessions with preconfigured panes layouts and commands. inspired f
 
 #### Installation
 ```bash
-go install github.com/xrehpicx/pee@latest
+go install git.raj.how/raj/pee.git
 ```
 
 #### Initialize a project
