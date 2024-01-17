@@ -26,7 +26,8 @@ func CreateTmuxSession(config *projectconfig.Configuration) error {
 		log.Debug("Ran command", "command", switchSessionCmd.String())
 	} else {
 		// If it doesn't exist, create the session
-		createSessionCmd := exec.Command("tmux", "new-session", "-d", "-s", sessionName)
+		createSessionCmd := exec.Command("tmux", "new-session", "-d", "-s", sessionName, "-c", config.WorkingDir)
+		// createSessionCmd := exec.Command("tmux", "new-session", "-d", "-s", sessionName)
 		if err := createSessionCmd.Run(); err != nil {
 			return err
 		}
